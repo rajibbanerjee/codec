@@ -29,4 +29,4 @@ export interface BreakevenResult {
   profitabilityData: Array<{ units: number; revenue: number; totalCost: number; profit: number; margin: number }>;
 }
 
-export type ViewMode = 'channels' | 'dashboard' | 'report';
+export type ViewMode = 'channels' | 'dashboard' | 'report' | 'metronome';

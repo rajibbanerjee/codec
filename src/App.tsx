@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { ChannelData, ViewMode } from './types';
 import { ChannelForm } from './components/ChannelForm';
 import { ChannelCard } from './components/ChannelCard';
 import { Dashboard } from './components/Dashboard';
 import { ReportView } from './components/ReportView';
+import { Metronome } from './components/Metronome';
 import { calculateBreakeven } from './utils/calculations';
 
 const SAMPLE_CHANNELS: ChannelData[] = [
@@ -49,7 +50,17 @@ export default function App() {
     setChannels(prev => prev.filter(c => c.id !== id));
   };
 
-  const navItems: { key: ViewMode; label: string; icon: React.ReactNode }[] = [
+  // Space bar shortcut when on metronome view — let the Metronome component handle it
+  useEffect(() => {
+    if (view !== 'metronome') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && e.target === document.body) e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [view]);
+
+  const navItems: { key: ViewMode; label: string; icon: React.ReactNode; alwaysEnabled?: boolean }[] = [
     {
       key: 'channels', label: 'Channels', icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,6 +79,13 @@ export default function App() {
       key: 'report', label: 'Report', icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      )
+    },
+    {
+      key: 'metronome', label: 'Metronome', alwaysEnabled: true, icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
       )
     },
@@ -95,7 +113,7 @@ export default function App() {
               <button
                 key={n.key}
                 onClick={() => setView(n.key)}
-                disabled={n.key !== 'channels' && channels.length === 0}
+                disabled={!n.alwaysEnabled && n.key !== 'channels' && channels.length === 0}
                 className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                   view === n.key
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
@@ -140,6 +158,9 @@ export default function App() {
               )}
             </button>
           )}
+
+          {/* Spacer for metronome view */}
+          {view === 'metronome' && <div className="w-24 flex-shrink-0" />}
         </div>
       </header>
 
@@ -206,6 +227,9 @@ export default function App() {
         {view === 'report' && channels.length > 0 && (
           <ReportView channels={channels} results={results} />
         )}
+
+        {/* Metronome View */}
+        {view === 'metronome' && <Metronome />}
       </main>
 
       {/* Footer */}
