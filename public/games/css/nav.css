@@ -1,0 +1,41 @@
+nav{background:rgba(17,24,39,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);height:64px;position:sticky;top:0;z-index:100}
+.nav-inner{max-width:1100px;margin:0 auto;padding:0 1.5rem;height:100%;display:flex;align-items:center;gap:.25rem}
+.nav-logo{display:flex;align-items:center;gap:.6rem;text-decoration:none;margin-right:1.5rem;flex-shrink:0}
+.nav-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#6366f1,#9333ea);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 14px rgba(99,102,241,.4)}
+.nav-logo-text{font-size:1rem;font-weight:800;color:#fff;letter-spacing:-.3px}
+.nav-logo-text span{color:var(--indigo-l)}
+.nav-links{display:flex;align-items:center;gap:.1rem;flex:1}
+.nav-link{padding:.45rem .85rem;border-radius:.5rem;font-size:.875rem;font-weight:500;color:#94a3b8;text-decoration:none;cursor:pointer;border:none;background:none;display:flex;align-items:center;gap:.3rem;transition:color .15s,background .15s;white-space:nowrap}
+.nav-link:hover{color:#fff;background:rgba(255,255,255,.06)}
+.nav-link svg{transition:transform .2s}
+.nav-link.open svg{transform:rotate(180deg)}
+.nav-item{position:relative}
+.dropdown{position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(-8px);width:420px;background:var(--surface2);border:1px solid var(--border);border-radius:1rem;padding:1.25rem;box-shadow:0 20px 60px rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
+.dropdown.visible{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+.dd-section{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.5rem;padding:0 .2rem}
+.dd-item{display:flex;align-items:center;gap:.65rem;padding:.55rem .65rem;border-radius:.6rem;text-decoration:none;border:1px solid transparent;transition:background .15s;cursor:pointer}
+.dd-item:hover{background:rgba(255,255,255,.05);border-color:var(--border)}
+.dd-item.active-game{background:var(--indigo-dim);border-color:rgba(99,102,241,.4)}
+.dd-item.soon{opacity:.45;cursor:default;pointer-events:none}
+.dd-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.dd-info{flex:1;min-width:0}
+.dd-name{font-size:.8rem;font-weight:600;color:#e2e8f0;display:flex;align-items:center;gap:.35rem}
+.dd-desc{font-size:.7rem;color:var(--muted)}
+.dd-badge{font-size:.57rem;font-weight:700;text-transform:uppercase;background:var(--indigo);color:#fff;padding:1px 5px;border-radius:3px}
+.dd-soon{font-size:.57rem;font-weight:600;background:var(--dim);color:var(--muted);padding:1px 5px;border-radius:3px}
+.dd-divider{border:none;border-top:1px solid var(--border);margin:.7rem 0}
+.nav-cta{margin-left:auto;padding:.45rem 1rem;background:var(--indigo);color:#fff;border:none;border-radius:.5rem;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:none;transition:background .15s;box-shadow:0 0 16px rgba(99,102,241,.3);flex-shrink:0}
+.nav-cta:hover{background:#5254cc}
+.hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:36px;height:36px;padding:6px;background:none;border:1px solid var(--border);border-radius:.5rem;cursor:pointer;margin-left:auto}
+.hamburger span{display:block;height:2px;background:#94a3b8;border-radius:2px;transition:transform .2s,opacity .2s}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.mobile-menu{display:none;flex-direction:column;background:var(--surface);border-bottom:1px solid var(--border);padding:1rem 1.5rem 1.5rem;gap:.2rem}
+.mobile-menu.open{display:flex}
+.m-section{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:.7rem 0 .3rem}
+.m-link{display:flex;align-items:center;gap:.6rem;padding:.5rem;border-radius:.5rem;text-decoration:none;font-size:.875rem;font-weight:500;color:#94a3b8;transition:color .15s,background .15s}
+.m-link:hover,.m-link.cur{color:#fff;background:rgba(255,255,255,.05)}
+.m-link.cur{color:var(--indigo-l);background:var(--indigo-dim)}
+.m-cta{margin-top:.75rem;padding:.7rem;background:var(--indigo);color:#fff;border:none;border-radius:.6rem;font-size:.875rem;font-weight:600;cursor:pointer;text-align:center}
+@media(max-width:680px){.nav-links,.nav-cta{display:none}.hamburger{display:flex}}
