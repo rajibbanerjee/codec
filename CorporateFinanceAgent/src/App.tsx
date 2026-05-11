@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import Vapi from '@vapi-ai/web'
 
-const KEY = import.meta.env.VITE_VAPI_PUBLIC_KEY ?? ''
-const AID = import.meta.env.VITE_VAPI_ASSISTANT_ID ?? ''
+// Trim to handle accidental whitespace/newlines in GitHub Secrets
+const KEY = (import.meta.env.VITE_VAPI_PUBLIC_KEY ?? '').trim()
+const AID = (import.meta.env.VITE_VAPI_ASSISTANT_ID ?? '').trim()
 
 type Status = 'idle' | 'connecting' | 'active' | 'ended'
 interface Msg { role: 'user' | 'assistant'; text: string }
@@ -14,52 +15,59 @@ export default function App() {
   const [muted, setMuted] = useState(false)
   const [vol, setVol] = useState(0)
   const [msgs, setMsgs] = useState<Msg[]>([])
-  const [err, setErr] = useState<string | null>(null)
+  // initErr is permanent — set on mount if SDK fails, never overwritten by runtime errors
+  const [initErr, setInitErr] = useState<string | null>(null)
+  // runtimeErr is cleared between calls
+  const [runtimeErr, setRuntimeErr] = useState<string | null>(null)
+  const [vapiReady, setVapiReady] = useState(false)
   const vapiRef = useRef<InstanceType<typeof Vapi> | null>(null)
   const chatRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!KEY) {
-      setErr('API key not configured. Please check GitHub Secrets (VAPI_PUBLIC_KEY).')
+      setInitErr('API key missing — check GitHub Secret: VAPI_PUBLIC_KEY')
       return
     }
     if (!AID) {
-      setErr('Assistant ID not configured. Please check GitHub Secrets (VAPI_ASSISTANT_ID).')
+      setInitErr('Assistant ID missing — check GitHub Secret: VAPI_ASSISTANT_ID')
       return
     }
+    console.log('[Vapi] Initializing SDK. KEY length:', KEY.length, 'AID length:', AID.length)
     let vapi: InstanceType<typeof Vapi>
     try {
       vapi = new Vapi(KEY)
       vapiRef.current = vapi
+      setVapiReady(true)
+      console.log('[Vapi] SDK initialized successfully')
 
-      vapi.on('call-start', () => { setStatus('active'); setErr(null) })
+      vapi.on('call-start', () => { setStatus('active'); setRuntimeErr(null) })
       vapi.on('call-end', () => { setStatus('ended'); setVol(0); setMuted(false) })
       vapi.on('volume-level', (v: number) => setVol(v))
 
       // error event shape: { type, stage, error: SerializedError|string, timestamp }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vapi.on('error', (e: any) => {
-        console.error('Vapi error event:', JSON.stringify(e))
+        console.error('[Vapi] error event:', JSON.stringify(e))
         setStatus('idle')
         const msg: string =
           (typeof e?.error === 'string' ? e.error : null)
           ?? e?.error?.message
           ?? e?.message
           ?? JSON.stringify(e)
-        setErr(msg)
+        setRuntimeErr(msg)
       })
 
       // call-start-failed shape: { stage, totalDuration, error: string, errorStack, timestamp, context }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vapi.on('call-start-failed' as any, (e: any) => {
-        console.error('Vapi call-start-failed:', JSON.stringify(e))
+        console.error('[Vapi] call-start-failed:', JSON.stringify(e))
         setStatus('idle')
         const msg: string =
           (typeof e?.error === 'string' ? e.error : null)
           ?? e?.error?.message
           ?? e?.message
           ?? 'Call failed to start — check your assistant ID and API key.'
-        setErr(msg)
+        setRuntimeErr(msg)
       })
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,8 +76,10 @@ export default function App() {
           setMsgs(p => [...p, { role: m.role, text: m.transcript }])
       })
     } catch (e) {
-      console.error('Vapi init error', e)
-      setErr(e instanceof Error ? e.message : 'Failed to initialize voice agent. Check your API key.')
+      console.error('[Vapi] init error:', e)
+      setInitErr(e instanceof Error
+        ? `SDK init failed: ${e.message}`
+        : 'SDK init failed — check browser console for details.')
     }
     return () => { try { vapiRef.current?.stop() } catch { /* ignore */ } }
   }, [])
@@ -79,28 +89,17 @@ export default function App() {
   }, [msgs])
 
   const start = async () => {
-    if (!vapiRef.current) {
-      setErr('Voice agent not initialized. Please refresh the page.')
-      return
-    }
-    if (!AID) {
-      setErr('Assistant ID not configured. Please check GitHub Secrets.')
-      return
-    }
+    setRuntimeErr(null)
     setStatus('connecting')
     setMsgs([])
-    setErr(null)
     // SDK catches all internal errors, emits 'error'/'call-start-failed', and returns null.
-    // It never re-throws. Error display is handled by the event listeners above.
-    const result = await vapiRef.current.start(AID)
+    const result = await vapiRef.current!.start(AID)
     if (result === null) {
-      // start() failed — error events already fired and set err/status.
-      // Safety net in case event listeners didn't reset status:
       setStatus(prev => prev === 'connecting' ? 'idle' : prev)
     }
   }
 
-  const stop = () => { vapiRef.current?.stop(); setStatus('idle'); setErr(null) }
+  const stop = () => { vapiRef.current?.stop(); setStatus('idle'); setRuntimeErr(null) }
 
   const toggleMute = () => {
     const next = !muted
@@ -109,6 +108,7 @@ export default function App() {
   }
 
   const configured = !!KEY && !!AID
+  const canStart = configured && vapiReady && !initErr
   const isIdle = status === 'idle' || status === 'ended'
   const isActive = status === 'active'
   const isConnecting = status === 'connecting'
@@ -214,11 +214,11 @@ export default function App() {
             <div className="hero">
               <h1>Corporate <span>Finance Agent</span></h1>
               <p>
-                {!configured && 'Voice agent is not yet configured.'}
-                {configured && isIdle && 'Ask me about valuations, financial modeling, M&A, or capital markets.'}
-                {configured && isConnecting && 'Connecting you to the agent…'}
-                {configured && isActive && (muted ? 'Your microphone is muted.' : 'I\'m listening — speak freely.')}
-                {configured && status === 'ended' && 'Call ended. Ready for another conversation.'}
+                {!canStart && !initErr && 'Voice agent is not yet configured.'}
+                {canStart && isIdle && 'Ask me about valuations, financial modeling, M&A, or capital markets.'}
+                {canStart && isConnecting && 'Connecting you to the agent…'}
+                {canStart && isActive && (muted ? 'Your microphone is muted.' : 'I\'m listening — speak freely.')}
+                {canStart && status === 'ended' && 'Call ended. Ready for another conversation.'}
               </p>
             </div>
 
@@ -247,7 +247,7 @@ export default function App() {
 
             <div className="ctrls">
               {isIdle && (
-                <button className="btn-go" onClick={start} disabled={!configured}>
+                <button className="btn-go" onClick={start} disabled={!canStart}>
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.27-.27.67-.36 1.02-.24 1.11.37 2.3.57 3.58.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.29 21 3 13.71 3 4.5c0-.55.45-1 1-1H7.5c.55 0 1 .45 1 1 0 1.29.2 2.53.57 3.7.11.35.03.74-.24 1.02L6.6 10.8z" /></svg>
                   Start Conversation
                 </button>
@@ -269,9 +269,14 @@ export default function App() {
               )}
             </div>
 
-            {err && (
-              <div style={{color:'#fca5a5',background:'rgba(220,38,38,0.1)',border:'1px solid rgba(220,38,38,0.25)',borderRadius:'0.75rem',padding:'0.6rem 1rem',fontSize:'0.8rem',textAlign:'center',maxWidth:360,lineHeight:1.5}}>
-                ⚠️ {err}
+            {initErr && (
+              <div style={{color:'#fca5a5',background:'rgba(220,38,38,0.12)',border:'1px solid rgba(220,38,38,0.3)',borderRadius:'0.75rem',padding:'0.6rem 1rem',fontSize:'0.8rem',textAlign:'center',maxWidth:380,lineHeight:1.55}}>
+                ⚠️ {initErr}
+              </div>
+            )}
+            {runtimeErr && !initErr && (
+              <div style={{color:'#fca5a5',background:'rgba(220,38,38,0.1)',border:'1px solid rgba(220,38,38,0.25)',borderRadius:'0.75rem',padding:'0.6rem 1rem',fontSize:'0.8rem',textAlign:'center',maxWidth:380,lineHeight:1.55}}>
+                ⚠️ {runtimeErr}
               </div>
             )}
 
