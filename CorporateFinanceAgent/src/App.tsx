@@ -20,32 +20,48 @@ export default function App() {
 
   useEffect(() => {
     if (!KEY) {
-      setErr('API key not configured. Please check GitHub Secrets.')
+      setErr('API key not configured. Please check GitHub Secrets (VAPI_PUBLIC_KEY).')
       return
     }
     if (!AID) {
-      setErr('Assistant ID not configured. Please check GitHub Secrets.')
+      setErr('Assistant ID not configured. Please check GitHub Secrets (VAPI_ASSISTANT_ID).')
       return
     }
     let vapi: InstanceType<typeof Vapi>
     try {
       vapi = new Vapi(KEY)
       vapiRef.current = vapi
+
       vapi.on('call-start', () => { setStatus('active'); setErr(null) })
       vapi.on('call-end', () => { setStatus('ended'); setVol(0); setMuted(false) })
       vapi.on('volume-level', (v: number) => setVol(v))
+
+      // error event shape: { type, stage, error: SerializedError|string, timestamp }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vapi.on('error', (e: any) => {
-        console.error('Vapi error event:', e)
+        console.error('Vapi error event:', JSON.stringify(e))
         setStatus('idle')
-        setErr(e?.message || e?.error || JSON.stringify(e) || 'Voice agent error. Check your API key and assistant ID.')
+        const msg: string =
+          (typeof e?.error === 'string' ? e.error : null)
+          ?? e?.error?.message
+          ?? e?.message
+          ?? JSON.stringify(e)
+        setErr(msg)
       })
+
+      // call-start-failed shape: { stage, totalDuration, error: string, errorStack, timestamp, context }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vapi.on('call-start-failed' as any, (e: any) => {
-        console.error('Vapi call-start-failed:', e)
+        console.error('Vapi call-start-failed:', JSON.stringify(e))
         setStatus('idle')
-        setErr(e?.message || 'Call failed to start — check your assistant ID and API key.')
+        const msg: string =
+          (typeof e?.error === 'string' ? e.error : null)
+          ?? e?.error?.message
+          ?? e?.message
+          ?? 'Call failed to start — check your assistant ID and API key.'
+        setErr(msg)
       })
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vapi.on('message', (m: any) => {
         if (m.type === 'transcript' && m.transcriptType === 'final' && m.transcript?.trim())
@@ -74,12 +90,13 @@ export default function App() {
     setStatus('connecting')
     setMsgs([])
     setErr(null)
-    try {
-      await vapiRef.current.start(AID)
-    } catch (e) {
-      console.error('Vapi start error:', e)
-      setStatus('idle')
-      setErr(e instanceof Error ? e.message : 'Failed to connect — check your API key and assistant ID.')
+    // SDK catches all internal errors, emits 'error'/'call-start-failed', and returns null.
+    // It never re-throws. Error display is handled by the event listeners above.
+    const result = await vapiRef.current.start(AID)
+    if (result === null) {
+      // start() failed — error events already fired and set err/status.
+      // Safety net in case event listeners didn't reset status:
+      setStatus(prev => prev === 'connecting' ? 'idle' : prev)
     }
   }
 
