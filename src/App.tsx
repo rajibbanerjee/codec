@@ -5,6 +5,7 @@ import { ChannelCard } from './components/ChannelCard';
 import { Dashboard } from './components/Dashboard';
 import { ReportView } from './components/ReportView';
 import { Metronome } from './components/Metronome';
+import { VoiceAgent } from './components/VoiceAgent';
 import { calculateBreakeven } from './utils/calculations';
 
 const SAMPLE_CHANNELS: ChannelData[] = [
@@ -36,7 +37,7 @@ const SAMPLE_CHANNELS: ChannelData[] = [
 
 export default function App() {
   const [channels, setChannels] = useState<ChannelData[]>(SAMPLE_CHANNELS);
-  const [view, setView] = useState<ViewMode>('channels');
+  const [view, setView] = useState<ViewMode>('voice');
   const [showForm, setShowForm] = useState(false);
 
   const results = useMemo(() => channels.map(calculateBreakeven), [channels]);
@@ -61,6 +62,13 @@ export default function App() {
   }, [view]);
 
   const navItems: { key: ViewMode; label: string; icon: React.ReactNode; alwaysEnabled?: boolean }[] = [
+    {
+      key: 'voice', label: 'AI Voice', alwaysEnabled: true, icon: (
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z" />
+        </svg>
+      )
+    },
     {
       key: 'channels', label: 'Channels', icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,14 +104,14 @@ export default function App() {
       {/* Top Nav */}
       <header className="bg-[#12122a] border-b border-slate-700/80 sticky top-0 z-50 shadow-xl shadow-black/30">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-          {/* Logo */}
+          {/* Logo / Name */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/30">
-              CA
+              RB
             </div>
             <div className="hidden sm:block">
-              <h1 className="font-bold text-white text-sm leading-tight">Channel Analyzer</h1>
-              <p className="text-slate-500 text-xs">Breakeven &amp; Profitability</p>
+              <h1 className="font-bold text-white text-sm leading-tight">Rajib Banerjee</h1>
+              <p className="text-slate-500 text-xs">Channel Analyzer &amp; AI Assistant</p>
             </div>
           </div>
 
@@ -158,14 +166,18 @@ export default function App() {
               )}
             </button>
           )}
+          {(view === 'voice' || view === 'metronome' || view === 'dashboard' || view === 'report') && (
+            <div className="w-24 flex-shrink-0" />
+          )}
 
-          {/* Spacer for metronome view */}
-          {view === 'metronome' && <div className="w-24 flex-shrink-0" />}
         </div>
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className={view === 'voice' ? '' : 'max-w-7xl mx-auto px-4 py-8'}>
+
+        {/* Voice Agent View */}
+        {view === 'voice' && <VoiceAgent />}
 
         {/* Channels View */}
         {view === 'channels' && (
