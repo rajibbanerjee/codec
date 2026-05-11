@@ -40,7 +40,7 @@ jobs:
           VITE_VAPI_ASSISTANT_ID: ${{ secrets.VAPI_ASSISTANT_ID }}
 
       - name: Install CorporateFinanceAgent dependencies
-        run: npm ci
+        run: npm install
         working-directory: CorporateFinanceAgent
 
       - name: Build CorporateFinanceAgent
