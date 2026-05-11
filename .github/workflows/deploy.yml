@@ -30,14 +30,30 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build main app
         run: npm run build
         env:
           VITE_VAPI_PUBLIC_KEY: ${{ secrets.VAPI_PUBLIC_KEY }}
           VITE_VAPI_ASSISTANT_ID: ${{ secrets.VAPI_ASSISTANT_ID }}
+
+      - name: Install CorporateFinanceAgent dependencies
+        run: npm ci
+        working-directory: CorporateFinanceAgent
+
+      - name: Build CorporateFinanceAgent
+        run: npm run build
+        working-directory: CorporateFinanceAgent
+        env:
+          VITE_VAPI_PUBLIC_KEY: ${{ secrets.VAPI_PUBLIC_KEY }}
+          VITE_VAPI_ASSISTANT_ID: ${{ secrets.VAPI_ASSISTANT_ID }}
+
+      - name: Merge CorporateFinanceAgent into dist
+        run: |
+          mkdir -p dist/CorporateFinanceAgent
+          cp -r CorporateFinanceAgent/dist/* dist/CorporateFinanceAgent/
 
       - uses: actions/upload-pages-artifact@v3
         with:
