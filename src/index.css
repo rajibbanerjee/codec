@@ -251,6 +251,12 @@ html, body, #root {
   transform: translateY(-1px) scale(1.02);
 }
 .btn-call-start:active { transform: scale(0.98); }
+.btn-call-start:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 
 .btn-cancel {
   padding: 0.875rem 2rem;

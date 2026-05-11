@@ -35,6 +35,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_VAPI_PUBLIC_KEY: ${{ secrets.VAPI_PUBLIC_KEY }}
+          VITE_VAPI_ASSISTANT_ID: ${{ secrets.VAPI_ASSISTANT_ID }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
