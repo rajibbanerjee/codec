@@ -19,14 +19,33 @@ export default function App() {
   const chatRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!KEY) return
+    if (!KEY) {
+      setErr('API key not configured. Please check GitHub Secrets.')
+      return
+    }
+    if (!AID) {
+      setErr('Assistant ID not configured. Please check GitHub Secrets.')
+      return
+    }
     let vapi: InstanceType<typeof Vapi>
     try {
       vapi = new Vapi(KEY)
       vapiRef.current = vapi
-      vapi.on('call-start', () => setStatus('active'))
+      vapi.on('call-start', () => { setStatus('active'); setErr(null) })
       vapi.on('call-end', () => { setStatus('ended'); setVol(0); setMuted(false) })
       vapi.on('volume-level', (v: number) => setVol(v))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vapi.on('error', (e: any) => {
+        console.error('Vapi error event:', e)
+        setStatus('idle')
+        setErr(e?.message || e?.error || JSON.stringify(e) || 'Voice agent error. Check your API key and assistant ID.')
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      vapi.on('call-start-failed' as any, (e: any) => {
+        console.error('Vapi call-start-failed:', e)
+        setStatus('idle')
+        setErr(e?.message || 'Call failed to start — check your assistant ID and API key.')
+      })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vapi.on('message', (m: any) => {
         if (m.type === 'transcript' && m.transcriptType === 'final' && m.transcript?.trim())
@@ -34,6 +53,7 @@ export default function App() {
       })
     } catch (e) {
       console.error('Vapi init error', e)
+      setErr(e instanceof Error ? e.message : 'Failed to initialize voice agent. Check your API key.')
     }
     return () => { try { vapiRef.current?.stop() } catch { /* ignore */ } }
   }, [])
@@ -43,7 +63,14 @@ export default function App() {
   }, [msgs])
 
   const start = async () => {
-    if (!vapiRef.current || !AID) return
+    if (!vapiRef.current) {
+      setErr('Voice agent not initialized. Please refresh the page.')
+      return
+    }
+    if (!AID) {
+      setErr('Assistant ID not configured. Please check GitHub Secrets.')
+      return
+    }
     setStatus('connecting')
     setMsgs([])
     setErr(null)
