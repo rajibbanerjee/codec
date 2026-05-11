@@ -14,6 +14,7 @@ export default function App() {
   const [muted, setMuted] = useState(false)
   const [vol, setVol] = useState(0)
   const [msgs, setMsgs] = useState<Msg[]>([])
+  const [err, setErr] = useState<string | null>(null)
   const vapiRef = useRef<InstanceType<typeof Vapi> | null>(null)
   const chatRef = useRef<HTMLDivElement>(null)
 
@@ -45,11 +46,17 @@ export default function App() {
     if (!vapiRef.current || !AID) return
     setStatus('connecting')
     setMsgs([])
-    try { await vapiRef.current.start(AID) }
-    catch { setStatus('idle') }
+    setErr(null)
+    try {
+      await vapiRef.current.start(AID)
+    } catch (e) {
+      console.error('Vapi start error:', e)
+      setStatus('idle')
+      setErr(e instanceof Error ? e.message : 'Failed to connect — check your API key and assistant ID.')
+    }
   }
 
-  const stop = () => { vapiRef.current?.stop(); setStatus('idle') }
+  const stop = () => { vapiRef.current?.stop(); setStatus('idle'); setErr(null) }
 
   const toggleMute = () => {
     const next = !muted
@@ -217,6 +224,12 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            {err && (
+              <div style={{color:'#fca5a5',background:'rgba(220,38,38,0.1)',border:'1px solid rgba(220,38,38,0.25)',borderRadius:'0.75rem',padding:'0.6rem 1rem',fontSize:'0.8rem',textAlign:'center',maxWidth:360,lineHeight:1.5}}>
+                ⚠️ {err}
+              </div>
+            )}
 
             {msgs.length > 0 && (
               <div className="chat" ref={chatRef}>
